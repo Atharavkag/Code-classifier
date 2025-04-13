@@ -1,6 +1,8 @@
 import streamlit as st
 import sqlite3
-from openai import OpenAI
+import requests
+import json
+from datetime import datetime
 
 # ---------- DATABASE SETUP ----------
 conn = sqlite3.connect("code_reviews.db", check_same_thread=False)
@@ -254,19 +256,38 @@ with st.form("code_review_form"):
 
 # ---------- OPENROUTER API FUNCTION ----------
 def call_openrouter(prompt):
-    client = OpenAI(
-        api_key="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",  # Replace securely in production
-        base_url="https://openrouter.ai/api/v1"
-    )
+    # Hardcoded API key - replace with your actual OpenRouter API key
+    api_key = "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"
+    
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "HTTP-Referer": "http://localhost:8501",  # Update with your actual URL
+        "X-Title": "Code Review Buddy",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "model": "mistralai/mixtral-8x7b-instruct",
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.7
+    }
+    
     try:
-        response = client.chat.completions.create(
-            model="mistralai/mixtral-8x7b-instruct",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            json=payload
         )
-        return response.choices[0].message.content.strip()
+        
+        if response.status_code == 200:
+            return response.json()["choices"][0]["message"]["content"].strip()
+        else:
+            st.error(f"API Error: {response.status_code} - {response.text}")
+            return None
+            
     except Exception as e:
-        return f"API Error: {str(e)}"
+        st.error(f"Request failed: {str(e)}")
+        return None
 
 # ---------- ON SUBMIT ----------
 if submit and code.strip():
@@ -293,31 +314,32 @@ Code:
         st.markdown("<div class='loading-text'>Analyzing your code with expert precision...</div>", unsafe_allow_html=True)
         feedback = call_openrouter(prompt)
     
-    with st.container():
-        st.markdown(f"""
-            <div class='feedback-container'>
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 1.5rem;">
-                    <h2 style='color: var(--primary); margin: 0;'>🤖 AI Code Review</h2>
-                    <div style="font-size: 0.9rem; background: #e0e7ff; color: var(--primary); 
-                                padding: 4px 10px; border-radius: 20px; font-weight: 500;">
-                        {language}
+    if feedback:
+        with st.container():
+            st.markdown(f"""
+                <div class='feedback-container'>
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 1.5rem;">
+                        <h2 style='color: var(--primary); margin: 0;'>🤖 AI Code Review</h2>
+                        <div style="font-size: 0.9rem; background: #e0e7ff; color: var(--primary); 
+                                    padding: 4px 10px; border-radius: 20px; font-weight: 500;">
+                            {language}
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <span style="font-weight: 600; color: var(--dark);">Focus Areas:</span>
+                        {focus_text if review_focus else '<span class="focus-badge">General Review</span>'}
+                    </div>
+                    <div style='margin-top: 1rem; line-height: 1.8; color: var(--dark);'>
+            """, unsafe_allow_html=True)
+            
+            st.markdown(feedback, unsafe_allow_html=True)
+            
+            st.markdown("""
                     </div>
                 </div>
-                <div style="margin-bottom: 1rem;">
-                    <span style="font-weight: 600; color: var(--dark);">Focus Areas:</span>
-                    {focus_text if review_focus else '<span class="focus-badge">General Review</span>'}
-                </div>
-                <div style='margin-top: 1rem; line-height: 1.8; color: var(--dark);'>
-        """, unsafe_allow_html=True)
-        
-        st.markdown(feedback, unsafe_allow_html=True)
-        
-        st.markdown("""
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
 
-    # Save to database
-    c.execute("INSERT INTO reviews (language, code, feedback) VALUES (?, ?, ?)",
-              (language, code, feedback))
-    conn.commit()
+        # Save to database
+        c.execute("INSERT INTO reviews (language, code, feedback) VALUES (?, ?, ?)",
+                  (language, code, feedback))
+        conn.commit()
