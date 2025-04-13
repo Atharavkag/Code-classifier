@@ -1,11 +1,11 @@
-# 🚀 Code Review Buddy - Your AI-Powered Code Review Assistant 
+# Code Review Buddy - Your AI-Powered Code Review Assistant 
 
 ![Header Banner](https://via.placeholder.com/1500x500/6366f1/FFFFFF?text=Code+Review+Buddy)  
 *"Elevating code quality through AI-powered insights"*
 
 ---
 
-## 🌟 Project Overview
+## Project Overview
 
 **Code Review Buddy** is an intelligent web application that provides automated code reviews using large language models (LLMs). It analyzes your code snippets across multiple dimensions and delivers expert-level feedback instantly. 
 
