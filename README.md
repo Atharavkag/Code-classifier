@@ -1,6 +1,6 @@
 # Code Review Buddy - Your AI-Powered Code Review Assistant 
 
-![Header Banner](ChatGPT Image Apr 13, 2025, 03_32_57 PM.png)  
+![Header Banner]((https://github.com/Atharavkag/Code-classifier/blob/main/ChatGPT%20Image%20Apr%2013%2C%202025%2C%2003_32_57%20PM.png))  
 *"Elevating code quality through AI-powered insights"*
 
 ---
